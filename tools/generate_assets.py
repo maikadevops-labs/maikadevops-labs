@@ -1,7 +1,7 @@
 """Genera los SVG animados del README (escritorio en el espacio + cabecera que se teclea).
 
 Uso:  python tools/generate_assets.py
-Salida: assets/escritorio-espacio.svg, assets/terminal.svg
+Salida: assets/maika-espacio.svg, assets/terminal.svg
 """
 import math
 import os
@@ -69,10 +69,14 @@ def rocket(y, scale, dur, begin, body="#e6edf3", fin="#f85149"):
           '><animate attributeName="opacity" values="1;0.3;1" dur="0.2s" repeatCount="indefinite"/></rect><rect width="0" height="0"'),
         r(12, 1, 2, 1, "#f2cc3c"), r(12, 3, 2, 1, "#f2cc3c"),
     ]
-    inner = f'<g transform="scale({scale})">' + "".join(p) + "</g>"
+    # el cohete mira hacia su dirección de viaje (abajo a la izquierda)
+    dx, dy = -(W + 40), 60
+    angle = -math.degrees(math.atan2(dy, -dx))
+    inner = (f'<g transform="scale({scale}) rotate({angle:.1f} {8.5*PX} {2.5*PX})">'
+             + "".join(p) + "</g>")
     start = (W + 4) * PX
     return (f'<g transform="translate({start},{y*PX})">'
-            + drift(inner, -(W + 4 + 36) * PX, 0, dur, begin) + "</g>")
+            + drift(inner, dx * PX, dy * PX, dur, begin) + "</g>")
 
 
 def asteroid(y, dur, begin, rows=None):
@@ -96,15 +100,12 @@ GIRL = [
     ".HPPPPPPPH.",
     ".HHPPPPPHH.",
     "..HPPPPPH..",
-    "...BBBBB...",
-    "...BB.BB...",
-    "...BB.BB...",
-    "..KKK.KKK..",
 ]
 GIRL_PAL = {"H": "#f2c94c", "J": "#ffe58a", "S": "#f2cc9b", "G": "#111111", "L": "#dff1ff",
             "M": "#c0504d", "P": "#8957e5", "B": "#1f6feb", "K": "#e6edf3"}
 GIRL_X = 46
-GIRL_Y = FLOOR - len(GIRL)
+GIRL_Y = 31       # sentada: la cabeza queda a la altura de la pantalla
+MOON = ["..WWW.", ".WWW..", "WWW...", "WWW...", "WWW...", ".WWW..", "..WWW."]
 
 HEART = [".GG.GG.", "GGGGGGG", "GGGGGGG", ".GGGGG.", "..GGG..", "...G..."]
 
@@ -123,15 +124,13 @@ def scene():
             f'<rect x="{x*PX}" y="{y*PX}" width="{PX}" height="{PX}" fill="#ffffff" opacity="0.2">'
             f'<animate attributeName="opacity" values="0.1;1;0.1" dur="{rnd.choice([2, 2.5, 3, 3.5])}s" '
             f'begin="{round(rnd.uniform(0, 3), 1)}s" repeatCount="indefinite"/></rect>')
-    p.append(planet(W + 14, 14, 9, ["#d2a8ff", "#a371f7", "#8957e5", "#6e40c9"], 55, -8, ring="#f2cc9b"))
-    p.append(planet(W + 8, 22, 4, ["#79c0ff", "#388bfd", "#1f6feb"], 38, -22))
+    p.append(sprite(MOON, {"W": "#e6edf3"}, 140, 5))
     p.append(asteroid(6, 20, -3))
     p.append(asteroid(24, 26, -14, ["..GG.", ".GGGG", "GGDGG", "GGGG.", ".GG.."]))
 
     # cohetes que pasan
-    p.append(rocket(5, 1, 7, 0))
-    p.append(rocket(16, 2, 11, -5, body="#c9d1d9", fin="#58a6ff"))
-    p.append(rocket(27, 1, 8, -2, fin="#3fb950"))
+    p.append(rocket(-6, 1, 9, 0))
+    p.append(rocket(-26, 2, 13, -6, body="#c9d1d9", fin="#58a6ff"))
 
     # suelo (asteroide plano)
     p.append(r(0, FLOOR, W, H - FLOOR, "#161b22"))
@@ -153,6 +152,16 @@ def scene():
                 f'<rect x="{(rx+2+c*2)*PX}" y="{y*PX}" width="{PX}" height="{PX}" fill="{colors[(row+c)%4]}">'
                 f'<animate attributeName="opacity" values="1;0.15;1" dur="{rnd.choice([0.8,1.2,1.6,2.0])}s" '
                 f'begin="{round(rnd.uniform(0,1.5),1)}s" repeatCount="indefinite"/></rect>')
+
+    # silla y piernas (van detrás del escritorio)
+    gx = GIRL_X
+    p.append(r(gx - 3, 36, 2, 12, "#484f58"))            # respaldo
+    p.append(r(gx + 1, 46, 11, 2, "#6e7681"))            # asiento
+    p.append(r(gx + 5, 48, 2, 1, "#484f58"))             # pie de la silla
+    p.append(r(gx + 1, 49, 11, 1, "#484f58"))            # base
+    p.append(r(gx + 2, 44, 13, 2, "#1f6feb"))            # cadera y muslos
+    p.append(r(gx + 13, 46, 2, 3, "#1f6feb"))            # pantorrilla
+    p.append(r(gx + 13, 49, 4, 1, "#e6edf3"))            # zapato
 
     # escritorio
     dx0, dx1, dy = 56, 112, 44
@@ -185,16 +194,14 @@ def scene():
             f'dur="2s" begin="{i*0.8}s" repeatCount="indefinite"/></rect>')
 
     # Maika
-    p.append(
-        '<g><animateTransform attributeName="transform" type="translate" values="0 0;0 -2;0 0" '
-        'dur="1.6s" repeatCount="indefinite"/>'
-        + sprite(GIRL[:13], GIRL_PAL, GIRL_X, GIRL_Y) + "</g>")
-    p.append(sprite(GIRL[13:], GIRL_PAL, GIRL_X, GIRL_Y + 13))
-    # brazo tecleando
+    p.append(sprite(GIRL, GIRL_PAL, GIRL_X, GIRL_Y))
+    # brazo: hombro -> antebrazo con manga -> mano sobre el teclado (la mano teclea)
+    p.append(r(gx + 9, 39, 2, 4, "#8957e5"))             # brazo superior
+    p.append(r(gx + 9, 42, 11, 2, "#8957e5"))            # antebrazo
     p.append(
         '<g><animateTransform attributeName="transform" type="translate" values="0 0;0 -4;0 0" '
         'dur="0.4s" repeatCount="indefinite"/>'
-        + r(GIRL_X + 10, 41, 3, 2, "#8957e5") + r(GIRL_X + 13, 42, 10, 1, "#f2cc9b") + "</g>")
+        + r(gx + 20, 42, 4, 2, "#f2cc9b") + "</g>")
 
     # corazón verde latiendo
     p.append(drift(sprite(HEART, {"G": "#3fb950"}, 36, 24), 0, -6 * PX, 1.6) .replace(
@@ -249,7 +256,7 @@ def header(lines, width=800, height=90, size=24, cw=14.4):
 
 
 if __name__ == "__main__":
-    with open(os.path.join(OUT, "escritorio-espacio.svg"), "w", encoding="utf-8") as f:
+    with open(os.path.join(OUT, "maika-espacio.svg"), "w", encoding="utf-8") as f:
         f.write(scene())
     with open(os.path.join(OUT, "terminal.svg"), "w", encoding="utf-8") as f:
         f.write(header([
@@ -257,4 +264,4 @@ if __name__ == "__main__":
             "PS&gt; DevOps + Web",
             "PS&gt; CI/CD, Docker, Cloud",
         ]))
-    print("OK -> assets/escritorio-espacio.svg, assets/terminal.svg")
+    print("OK -> assets/maika-espacio.svg, assets/terminal.svg")

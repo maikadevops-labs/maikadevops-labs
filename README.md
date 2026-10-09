@@ -2,7 +2,7 @@
 
 <img src="assets/terminal.svg" alt="Maika - DevOps + Web" width="800"/>
 
-<img src="assets/escritorio-espacio.svg" alt="Escena pixel art" width="640"/>
+<img src="assets/maika-espacio.svg" alt="Escena pixel art" width="640"/>
 
 </div>
 
