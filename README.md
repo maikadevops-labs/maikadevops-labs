@@ -113,6 +113,6 @@
 
 <img src="assets/espacio.svg" width="640" height="24" alt=""/>
 
-<sub>La escena y los títulos son SVG animados generados con <a href="tools/generate_assets.py">tools/generate_assets.py</a>.</sub>
+<sub>Escena y títulos: SVG animados generados con Python (<a href="tools/generate_assets.py">tools/generate_assets.py</a>). Código abierto bajo licencia <a href="LICENSE">MIT</a>.</sub>
 
 </div>
