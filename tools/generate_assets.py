@@ -95,6 +95,11 @@ FONT = {
     "V": ["X...X", "X...X", "X...X", "X...X", "X...X", ".X.X.", "..X.."],
     "P": ["XXXX.", "X...X", "X...X", "XXXX.", "X....", "X....", "X...."],
     ">": ["X....", ".X...", "..X..", "...X.", "..X..", ".X...", "X...."],
+    "B": ["XXXX.", "X...X", "X...X", "XXXX.", "X...X", "X...X", "XXXX."],
+    "R": ["XXXX.", "X...X", "X...X", "XXXX.", "X.X..", "X..X.", "X...X"],
+    "T": ["XXXXX", "..X..", "..X..", "..X..", "..X..", "..X..", "..X.."],
+    "C": [".XXXX", "X....", "X....", "X....", "X....", "X....", ".XXXX"],
+    "N": ["X...X", "XX..X", "X.X.X", "X..XX", "X...X", "X...X", "X...X"],
 }
 GREETING = "HOLA, SOY MAIKA DEVOPS"
 
@@ -290,11 +295,106 @@ def scene(style="c"):
             + "".join(p) + "</svg>")
 
 
+def universe(width, height, seed, uid):
+    """Fondo negro de universo para tarjetas: estrellas pixeladas y algunas que parpadean."""
+    rnd = random.Random(seed)
+    parts = [
+        '<defs>'
+        f'<clipPath id="{uid}c"><rect x="0.5" y="0.5" width="{width-1}" height="{height-1}" rx="6"/></clipPath>'
+        '</defs>',
+        f'<g clip-path="url(#{uid}c)">',
+        f'<rect width="{width}" height="{height}" fill="#05070b"/>',
+    ]
+    n = max(12, int(width * height / 2600))
+    for i in range(n):
+        x, y = rnd.randrange(0, width - 2, 2), rnd.randrange(0, height - 2, 2)
+        size = 2 if rnd.random() < 0.85 else 4
+        col = rnd.choice(["#ffffff", "#e6edf3", "#c9d1d9", "#a5b1c2"])
+        op = round(rnd.uniform(0.2, 0.55), 2)
+        tw = ""
+        if i % 6 == 0:
+            tw = (f'><animate attributeName="opacity" values="{op};0.1;{op}" dur="{rnd.choice([2, 3, 4])}s" '
+                  f'begin="{round(rnd.uniform(0, 3), 1)}s" repeatCount="indefinite"/></rect><rect width="0" height="0"')
+        parts.append(f'<rect x="{x}" y="{y}" width="{size}" height="{size}" fill="{col}" opacity="{op}"{tw}/>')
+    parts.append("</g>")
+    parts.append(f'<rect x="0.5" y="0.5" width="{width-1}" height="{height-1}" rx="6" fill="none" stroke="#30363d"/>')
+    return "".join(parts)
+
+
+def title_svg(text, unit=3, width=W * PX, height=44):
+    """Título de sección: mini panel de terminal con prompt, texto pixelado y cursor."""
+    def glyph(ch, x, y, color, shadow):
+        cells = [(gx, gy) for gy, row in enumerate(FONT[ch]) for gx, c in enumerate(row) if c == "X"]
+        box = lambda gx, gy, col, o=0: (f'<rect x="{x + gx*unit + o}" y="{y + gy*unit + o}" '
+                                        f'width="{unit}" height="{unit}" fill="{col}"/>')
+        return "".join(box(gx, gy, shadow, 2) for gx, gy in cells) + "".join(box(gx, gy, color) for gx, gy in cells)
+
+    y = (height - 7 * unit) // 2
+    x = 22
+    parts = [universe(width, height, sum(map(ord, text)), "t")]
+    parts.append(glyph(">", x, y, GREEN, GREEN_SH))
+    x += 10 * unit
+    for ch in text:
+        if ch == " ":
+            x += 4 * unit
+            continue
+        parts.append(glyph(ch, x, y, WHITE, WHITE_SH))
+        x += 6 * unit
+    parts.append(
+        f'<rect x="{x}" y="{y}" width="{4*unit}" height="{7*unit}" fill="{GREEN}">'
+        f'<animate attributeName="opacity" values="1;0;1" dur="1s" calcMode="discrete" '
+        f'repeatCount="indefinite"/></rect>')
+    return (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {width} {height}" width="{width}" '
+            f'height="{height}" role="img" aria-label="{text.title()}" shape-rendering="crispEdges">'
+            + "".join(parts) + "</svg>")
+
+
+def about_card(width=W * PX):
+    """Tarjeta 'sobre mí' con aspecto de terminal."""
+    lines = [
+        ("whoami", "Maika DevOps"),
+        ("cat rol.txt", "DevOps Engineer | Cloud &amp; Platform Engineering"),
+        ("cat hago.txt", "Automatizo infraestructura, optimizo pipelines y construyo"),
+        (None, "herramientas para hacer más simple el trabajo de desarrollo."),
+        ("cat comparto.txt", "Creo contenido técnico, doy charlas y comparto lo que aprendo"),
+        (None, "sobre DevOps, Kubernetes, Cloud e IA."),
+        ("cat comunidad.txt", "Speaker · Organizadora de comunidades tech · Aprendiendo en público"),
+        ("cat estado.txt", "Construyendo, aprendiendo y compartiendo. Un commit a la vez."),
+    ]
+    mono = "Consolas,Menlo,'DejaVu Sans Mono',monospace"
+    body, y = [], 36
+    for i, (cmd, out) in enumerate(lines):
+        if cmd:
+            body.append(f'<text x="24" y="{y}" font-family="{mono}" font-size="14" fill="#3fb950">$ '
+                        f'<tspan fill="#e6edf3">{cmd}</tspan></text>')
+            y += 22
+        body.append(f'<text x="24" y="{y}" font-family="{mono}" font-size="14" fill="#8b949e">{out}</text>')
+        continues = i + 1 < len(lines) and lines[i + 1][0] is None
+        y += 20 if continues else 32
+    body.append(f'<text x="24" y="{y}" font-family="{mono}" font-size="14" fill="#3fb950">$ </text>'
+                f'<rect x="42" y="{y-13}" width="9" height="16" fill="#3fb950">'
+                f'<animate attributeName="opacity" values="1;0;1" dur="1s" calcMode="discrete" '
+                f'repeatCount="indefinite"/></rect>')
+    height = y + 22
+    return (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {width} {height}" width="{width}" '
+            f'height="{height}" role="img" aria-label="Sobre mí: Maika DevOps, DevOps Engineer en Cloud y Platform Engineering. Creo contenido técnico, doy charlas y comparto lo que aprendo sobre DevOps, Kubernetes, Cloud e IA.">'
+            + universe(width, height, 7, "a")
+            + "".join(body) + "</svg>")
+
+
 if __name__ == "__main__":
     import sys
     with open(os.path.join(OUT, "maika-perfil.svg"), "w", encoding="utf-8") as f:
         f.write(scene())
-    print("OK -> assets/maika-perfil.svg")
+    for name, text in [("sobre-mi", "SOBRE MI"), ("stack", "STACK"),
+                       ("estadisticas", "ESTADISTICAS"), ("contacto", "CONTACTO")]:
+        with open(os.path.join(OUT, f"{name}.svg"), "w", encoding="utf-8") as f:
+            f.write(title_svg(text))
+    with open(os.path.join(OUT, "espacio.svg"), "w", encoding="utf-8") as f:   # espaciador transparente
+        f.write(f'<svg xmlns="http://www.w3.org/2000/svg" width="{W*PX}" height="24" viewBox="0 0 {W*PX} 24"/>')
+    with open(os.path.join(OUT, "sobre-mi-tarjeta.svg"), "w", encoding="utf-8") as f:
+        f.write(about_card())
+    print("OK -> assets/maika-perfil.svg + secciones")
     if "--propuestas" in sys.argv:
         prop = os.path.join(os.path.dirname(__file__), "propuestas")
         os.makedirs(prop, exist_ok=True)
