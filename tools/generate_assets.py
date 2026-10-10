@@ -387,7 +387,8 @@ if __name__ == "__main__":
     with open(os.path.join(OUT, "maika-perfil.svg"), "w", encoding="utf-8") as f:
         f.write(scene())
     for name, text in [("sobre-mi", "SOBRE MI"), ("stack", "STACK"),
-                       ("estadisticas", "ESTADISTICAS"), ("contacto", "CONTACTO")]:
+                       ("estadisticas", "ESTADISTICAS"), ("actividad", "ACTIVIDAD"),
+                       ("contacto", "CONTACTO")]:
         with open(os.path.join(OUT, f"{name}.svg"), "w", encoding="utf-8") as f:
             f.write(title_svg(text))
     with open(os.path.join(OUT, "espacio.svg"), "w", encoding="utf-8") as f:   # espaciador transparente
